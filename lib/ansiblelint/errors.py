@@ -1,4 +1,5 @@
 """Exceptions and error representations."""
+import functools
 from typing import Any
 
 
@@ -20,6 +21,7 @@ class Match(object):
                                 self.filename, self.linenumber, self.line)
 
 
+@functools.total_ordering
 class MatchError(ValueError):
     """Exception that would end-up as linter rule match."""
 
@@ -53,3 +55,10 @@ class MatchError(ValueError):
     def __hash__(self):
         """Perform hash of matches."""
         return hash((self.message, self.rule, self.filename, self.linenumber))
+
+    def __lt__(self, other):
+        """Enable sorting of MatchError instances."""
+        return (
+                self.filename, self.linenumber, self.message, getattr(self.rule, "id", 0)
+            ) < (
+            other.filename, other.linenumber, other.message, getattr(other.rule, "id", 0))
