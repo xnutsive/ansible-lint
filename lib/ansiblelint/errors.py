@@ -1,4 +1,5 @@
 """Exceptions and error representations."""
+from typing import Any
 
 
 class Match(object):
@@ -22,16 +23,33 @@ class Match(object):
 class MatchError(ValueError):
     """Exception that would end-up as linter rule match."""
 
-    def __init__(self, message, rule=None):
+    def __init__(
+            self,
+            message: str = "",
+            rule: Any = None,
+            filename="",
+            linenumber=0,
+            line=None):
         """Initialize a MatchError instance."""
         super().__init__(message)
 
-        self.message = message
-        self.linenumber = 0
-        self.line = None
-        self.filename = None
+        if not (message or rule):
+            raise RuntimeError("Calling MatchError requires either a message or a rule.")
+
+        self.message = message or getattr(rule, "description", "")
+        self.linenumber = linenumber
+        self.line = line
+        self.filename = filename
         self.rule = rule
 
     def get_match(self) -> Match:
         """Return a Match instance."""
         return Match(self.linenumber, self.line, self.filename, self.rule, self.message)
+
+    def __eq__(self, other):
+        """Identify duplicate matches."""
+        return self.__hash__() == other.__hash__()
+
+    def __hash__(self):
+        """Perform hash of matches."""
+        return hash((self.message, self.rule, self.filename, self.linenumber))
