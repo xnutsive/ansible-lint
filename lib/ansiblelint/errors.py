@@ -1,8 +1,10 @@
 """Exceptions and error representations."""
 import functools
 from typing import Any
+from ansiblelint.file_utils import normpath
 
 
+@functools.total_ordering
 class Match(object):
     """Rule violation detected during linting."""
 
@@ -19,6 +21,13 @@ class Match(object):
         formatstr = u"[{0}] ({1}) matched {2}:{3} {4}"
         return formatstr.format(self.rule.id, self.message,
                                 self.filename, self.linenumber, self.line)
+
+    def __lt__(self, other):
+        """Enable sorting of MatchError instances."""
+        return (
+                self.filename, self.linenumber, self.message, getattr(self.rule, "id", 0)
+            ) < (
+            other.filename, other.linenumber, other.message, getattr(other.rule, "id", 0))
 
 
 @functools.total_ordering
@@ -41,7 +50,7 @@ class MatchError(ValueError):
         self.message = message or getattr(rule, "description", "")
         self.linenumber = linenumber
         self.line = line
-        self.filename = filename
+        self.filename = normpath(str(filename)) if filename else filename
         self.rule = rule
 
     def get_match(self) -> Match:
